@@ -1,6 +1,6 @@
 ﻿namespace GymAppReal.Models
 {
-    public class Exercise
+    public class ExerciseDTO
     {
         public int Id { get; set; }
         public required string ExerciseName { get; set; }
@@ -9,6 +9,5 @@
         public double Weight { get; set; }
         public DateOnly Date { get; set; }
         public int UserId { get; set; }
-        public required User User { get; set; }
     }
 }
