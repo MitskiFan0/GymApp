@@ -17,7 +17,7 @@ namespace GymAppReal.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Exercise>> GetExercise(int id)
+        public async Task<ActionResult<ExerciseDTO>> GetExercise(int id)
         {
             var exercise = await _context.Exercises.FindAsync(id);
 
@@ -26,25 +26,87 @@ namespace GymAppReal.Controllers
                 return NotFound();
             }
 
-            return exercise;
+            var exerciseDTO = new ExerciseDTO
+            {
+                Id = exercise.Id,
+                ExerciseName = exercise.ExerciseName,
+                Sets = exercise.Sets,
+                Reps = exercise.Reps,
+                Weight = exercise.Weight,
+                Date = exercise.Date,
+                UserId = exercise.UserId
+            };
+
+            return exerciseDTO;
+        }
+
+        [HttpGet("user/{userId}")]
+        public async Task<ActionResult<IEnumerable<ExerciseDTO>>> GetExercisesByUser(int userId)
+        {
+            var exercises = await _context.Exercises.Where(e => e.UserId == userId).ToListAsync();
+
+            var exerciseDTOs = exercises.Select(e => new ExerciseDTO
+            {
+                Id = e.Id,
+                ExerciseName = e.ExerciseName,
+                Sets = e.Sets,
+                Reps = e.Reps,
+                Weight = e.Weight,
+                Date = e.Date,
+                UserId = e.UserId
+            }).ToList();
+
+            return exerciseDTOs;
         }
 
         [HttpPost]
-        public async Task<ActionResult<Exercise>> PostExercise(Exercise exercise)
+        public async Task<ActionResult<ExerciseDTO>> PostExercise(ExerciseDTO exerciseDTO)
         {
+            var user = await _context.Users.FindAsync(exerciseDTO.UserId);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            var exercise = new Exercise
+            {
+                ExerciseName = exerciseDTO.ExerciseName,
+                Sets = exerciseDTO.Sets,
+                Reps = exerciseDTO.Reps,
+                Weight = exerciseDTO.Weight,
+                Date = exerciseDTO.Date,
+                UserId = exerciseDTO.UserId,
+                User = user
+            };
+
             _context.Exercises.Add(exercise);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetExercise), new { id = exercise.Id }, exercise);
+            exerciseDTO.Id = exercise.Id;
+
+            return CreatedAtAction(nameof(GetExercise), new { id = exercise.Id }, exerciseDTO);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutExercise(int id, Exercise exercise)
+        public async Task<IActionResult> PutExercise(int id, ExerciseDTO exerciseDTO)
         {
-            if (id != exercise.Id)
+            if (id != exerciseDTO.Id)
             {
                 return BadRequest();
             }
+
+            var exercise = await _context.Exercises.FindAsync(id);
+            if (exercise == null)
+            {
+                return NotFound();
+            }
+
+            exercise.ExerciseName = exerciseDTO.ExerciseName;
+            exercise.Sets = exerciseDTO.Sets;
+            exercise.Reps = exerciseDTO.Reps;
+            exercise.Weight = exerciseDTO.Weight;
+            exercise.Date = exerciseDTO.Date;
+            exercise.UserId = exerciseDTO.UserId;
 
             _context.Entry(exercise).State = EntityState.Modified;
 
@@ -66,6 +128,7 @@ namespace GymAppReal.Controllers
 
             return NoContent();
         }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteExercise(int id)
         {
@@ -73,7 +136,7 @@ namespace GymAppReal.Controllers
             if (exercise == null)
             {
                 return NotFound();
-            } 
+            }
 
             _context.Exercises.Remove(exercise);
             await _context.SaveChangesAsync();
